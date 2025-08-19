@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
+import { Header } from "./Header.tsx";
+import { TodoList } from "./TodoList.tsx";
 
-function App() {
+export const App = () => {
   return (
-    <div>
-      <h1>Hello World</h1>
+    <div className="App">
+      <Header />
+      <TodoList />
     </div>
   );
-}
-
-export default App;
+};
