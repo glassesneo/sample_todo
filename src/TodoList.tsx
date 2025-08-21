@@ -168,10 +168,10 @@ export const TodoList = () => {
     <div className="m-8">
       <ul className="list bg-base-100 max-w-md mx-auto rounded-box shadow-md">
         <li className="p-4 pb-2 flex items-center justify-between">
-          <p className="text-xs opacity-60">Todo List</p>
+          <p className="text-lg opacity-60">Todo List</p>
           <div className="tooltip" data-tip="Clear finished todos">
             <button
-              className="btn btn-accent"
+              className="btn btn-warning"
               type="button"
               onClick={onClickClear}
             >
@@ -188,14 +188,19 @@ export const TodoList = () => {
               onChange={onChangeNewTitle}
             />
           </label>
-          <button
-            className="btn btn-accent join-item"
-            type="button"
-            disabled={todoListState.newTitle === ""}
-            onClick={onClickAdd}
+          <div
+            className="tooltip tooltip-right tooltip-success"
+            data-tip="Add a new todo"
           >
-            Add
-          </button>
+            <button
+              className="btn btn-accent join-item"
+              type="button"
+              disabled={todoListState.newTitle === ""}
+              onClick={onClickAdd}
+            >
+              Add
+            </button>
+          </div>
         </li>
       </ul>
     </div>
