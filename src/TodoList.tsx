@@ -5,9 +5,10 @@ type TodoAction =
   | { type: "add" }
   | { type: "check"; id: TodoId }
   | { type: "edit"; id: TodoId }
+  | { type: "clear" }
   | { type: "changeTitle"; title: string };
 
-type TodoList = { [key: TodoId]: Todo };
+type TodoList = Map<TodoId, Todo>;
 
 type TodoState = {
   todoList: TodoList;
@@ -31,15 +32,15 @@ const updateTodoList = (
   id: TodoId,
   todo: Todo,
 ): TodoList => {
-  return {
-    ...todoList,
-    [id]: todo,
-  };
+  const newTodoList = new Map(todoList);
+  newTodoList.set(id, todo);
+  return newTodoList;
 };
 
 const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
   switch (action.type) {
     case "add": {
+      const todo = newTodo(state.newTitle, state.nextId);
       const newState = {
         ...state,
         newTitle: "",
@@ -47,21 +48,24 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
         todoList: updateTodoList(
           state.todoList,
           state.nextId,
-          newTodo(state.newTitle, state.nextId),
+          todo,
         ),
       };
+      console.log("todo", todo);
+      console.log("todoListState", newState);
       return newState;
     }
 
     case "check": {
+      const todo: Todo = state.todoList.get(action.id)!;
       const newState = {
         ...state,
         todoList: updateTodoList(
           state.todoList,
           action.id,
           {
-            ...state.todoList[action.id],
-            done: !state.todoList[action.id].done,
+            ...todo,
+            done: !todo.done,
           },
         ),
       };
@@ -69,14 +73,15 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
     }
 
     case "edit": {
+      const todo: Todo = state.todoList.get(action.id)!;
       const newState = {
         ...state,
         todoList: updateTodoList(
           state.todoList,
           action.id,
           {
-            ...state.todoList[action.id],
-            isBeingEdited: !state.todoList[action.id].isBeingEdited,
+            ...todo,
+            isBeingEdited: !todo.isBeingEdited,
           },
         ),
       };
@@ -91,14 +96,22 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
       return newState;
     }
 
-    default:
-      return state;
+    case "clear": {
+      const filteredTodoList = new Map(
+        Array.from(state.todoList).filter(([_, todo]) => !todo.done),
+      );
+      const newState = {
+        ...state,
+        todoList: filteredTodoList,
+      };
+      return newState;
+    }
   }
 };
 
 export const TodoList = () => {
   const initialTodoListState: TodoState = {
-    todoList: {},
+    todoList: new Map(),
     newTitle: "",
     nextId: 0,
   };
@@ -123,6 +136,10 @@ export const TodoList = () => {
     todoListDispatch({ type: "changeTitle", title: e.target.value });
   };
 
+  const onClickClear = () => {
+    todoListDispatch({ type: "clear" });
+  };
+
   const listToElements = (todo: Todo) => {
     return (
       <li key={todo.id} className="list-row">
@@ -138,7 +155,7 @@ export const TodoList = () => {
         <p className="list-col-wrap text-xs">{todo.detail}</p>
         <button
           type="button"
-          className="btn btn-square btn-ghost  ml-auto whitespace-nowrap px-6"
+          className="btn btn-square btn-ghost ml-auto whitespace-nowrap px-6"
           onClick={() => onClickEdit(todo.id)}
         >
           {todo.isBeingEdited ? "Save" : "Edit"}
@@ -150,10 +167,19 @@ export const TodoList = () => {
   return (
     <div className="m-8">
       <ul className="list bg-base-100 max-w-md mx-auto rounded-box shadow-md">
-        <li className="p-4 pb-2 text-xs opacity-60 tracking-wide">
-          Todo list
+        <li className="p-4 pb-2 flex items-center justify-between">
+          <p className="text-xs opacity-60">Todo List</p>
+          <div className="tooltip" data-tip="Clear finished todos">
+            <button
+              className="btn btn-accent"
+              type="button"
+              onClick={onClickClear}
+            >
+              Clear
+            </button>
+          </div>
         </li>
-        {Object.values(todoListState.todoList).map(listToElements)}
+        {Array.from(todoListState.todoList.values()).map(listToElements)}
         <li className="join p-4">
           <label className="input join-item">
             <input
