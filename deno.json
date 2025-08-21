@@ -16,5 +16,5 @@
     "react-dom": "npm:react-dom@^19.1.1",
     "vite": "npm:vite@^6.1.1"
   },
-  "nodeModulesDir": "auto",
+  "nodeModulesDir": "auto"
 }
