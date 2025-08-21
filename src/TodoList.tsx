@@ -1,12 +1,14 @@
-import React, { useReducer } from "react";
+import React, { ChangeEvent, useReducer } from "react";
 import { Todo, TodoId } from "./types.ts";
 
 type TodoAction =
   | { type: "add" }
   | { type: "check"; id: TodoId }
-  | { type: "edit"; id: TodoId }
+  | { type: "clickEdit"; id: TodoId }
+  | { type: "editTitle"; id: TodoId; value: string }
+  | { type: "save"; id: TodoId }
   | { type: "clear" }
-  | { type: "changeTitle"; title: string };
+  | { type: "changeNewTitle"; title: string };
 
 type TodoList = Map<TodoId, Todo>;
 
@@ -22,6 +24,10 @@ const newTodo = (title: string, id: TodoId): Todo => {
     detail: "",
     done: false,
     isBeingEdited: false,
+    editedItems: {
+      title: title,
+      detail: "",
+    },
     id: id,
   };
   return todo;
@@ -51,8 +57,6 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
           todo,
         ),
       };
-      console.log("todo", todo);
-      console.log("todoListState", newState);
       return newState;
     }
 
@@ -72,7 +76,7 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
       return newState;
     }
 
-    case "edit": {
+    case "clickEdit": {
       const todo: Todo = state.todoList.get(action.id)!;
       const newState = {
         ...state,
@@ -81,14 +85,46 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
           action.id,
           {
             ...todo,
-            isBeingEdited: !todo.isBeingEdited,
+            isBeingEdited: true,
           },
         ),
       };
       return newState;
     }
 
-    case "changeTitle": {
+    case "editTitle": {
+      const todo: Todo = state.todoList.get(action.id)!;
+      const newState = {
+        ...state,
+        todoList: updateTodoList(
+          state.todoList,
+          action.id,
+          {
+            ...todo,
+            editedItems: { ...todo.editedItems, title: action.value },
+          },
+        ),
+      };
+      return newState;
+    }
+
+    case "save": {
+      const todo: Todo = state.todoList.get(action.id)!;
+      const newState = {
+        ...state,
+        todoList: updateTodoList(
+          state.todoList,
+          action.id,
+          {
+            ...todo,
+            title: todo.editedItems.title,
+          },
+        ),
+      };
+      return newState;
+    }
+
+    case "changeNewTitle": {
       const newState = {
         ...state,
         newTitle: action.title,
@@ -125,7 +161,22 @@ export const TodoList = () => {
   };
 
   const onClickEdit = (id: TodoId) => {
-    todoListDispatch({ type: "edit", id: id });
+    todoListDispatch({ type: "clickEdit", id: id });
+  };
+
+  const onEditTitleChange = (
+    id: TodoId,
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    todoListDispatch({
+      type: "editTitle",
+      id: id,
+      value: e.target.value,
+    });
+  };
+
+  const onClickSave = (id: TodoId) => {
+    todoListDispatch({ type: "save", id: id });
   };
 
   const onClickAdd = () => {
@@ -133,7 +184,7 @@ export const TodoList = () => {
   };
 
   const onChangeNewTitle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    todoListDispatch({ type: "changeTitle", title: e.target.value });
+    todoListDispatch({ type: "changeNewTitle", title: e.target.value });
   };
 
   const onClickClear = () => {
@@ -153,13 +204,48 @@ export const TodoList = () => {
           {todo.title}
         </div>
         <p className="list-col-wrap text-xs">{todo.detail}</p>
-        <button
-          type="button"
-          className="btn btn-square btn-ghost ml-auto whitespace-nowrap px-6"
+        <label
+          htmlFor={`${todo.id}`}
+          className="btn btn-square btn-wide btn-ghost btn-sm ml-auto whitespace-nowrap px-11"
           onClick={() => onClickEdit(todo.id)}
         >
-          {todo.isBeingEdited ? "Save" : "Edit"}
-        </button>
+          Edit
+        </label>
+
+        <input type="checkbox" id={`${todo.id}`} className="modal-toggle" />
+        <div className="modal" role="dialog">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Edit todo</h3>
+            <input
+              className="input input-bordered mx-auto w-full m-4"
+              value={todo.editedItems.title}
+              onChange={(e) => onEditTitleChange(todo.id, e)}
+              placeholder="Title"
+              autoFocus
+            />
+            <div className="modal-action">
+              <label
+                htmlFor={`${todo.id}`}
+                className={todo.editedItems.title === ""
+                  ? "btn btn-disabled"
+                  : "btn"}
+                onClick={(e) => {
+                  if (todo.editedItems.title === "") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
+                  onClickSave(todo.id);
+                }}
+              >
+                Save
+              </label>
+            </div>
+          </div>
+          <label htmlFor={`${todo.id}`} className="modal-backdrop">
+            Cancel
+          </label>
+        </div>
       </li>
     );
   };

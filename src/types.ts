@@ -3,6 +3,10 @@ export type Todo = {
   detail: string;
   done: boolean;
   isBeingEdited: boolean;
+  editedItems: {
+    title: string;
+    detail: string;
+  };
   id: TodoId;
 };
 
