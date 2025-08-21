@@ -3,5 +3,7 @@ export type Todo = {
   detail: string;
   done: boolean;
   isBeingEdited: boolean;
-  id: number;
+  id: TodoId;
 };
+
+export type TodoId = number;
