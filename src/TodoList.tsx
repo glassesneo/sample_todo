@@ -6,7 +6,9 @@ type TodoAction =
   | { type: "check"; id: TodoId }
   | { type: "clickEdit"; id: TodoId }
   | { type: "editTitle"; id: TodoId; value: string }
+  | { type: "editDetail"; id: TodoId; value: string }
   | { type: "save"; id: TodoId }
+  | { type: "cancelEdit"; id: TodoId }
   | { type: "clear" }
   | { type: "changeNewTitle"; title: string };
 
@@ -108,6 +110,22 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
       return newState;
     }
 
+    case "editDetail": {
+      const todo: Todo = state.todoList.get(action.id)!;
+      const newState = {
+        ...state,
+        todoList: updateTodoList(
+          state.todoList,
+          action.id,
+          {
+            ...todo,
+            editedItems: { ...todo.editedItems, detail: action.value },
+          },
+        ),
+      };
+      return newState;
+    }
+
     case "save": {
       const todo: Todo = state.todoList.get(action.id)!;
       const newState = {
@@ -118,6 +136,26 @@ const todoListReducer = (state: TodoState, action: TodoAction): TodoState => {
           {
             ...todo,
             title: todo.editedItems.title,
+            detail: todo.editedItems.detail,
+          },
+        ),
+      };
+      return newState;
+    }
+
+    case "cancelEdit": {
+      const todo: Todo = state.todoList.get(action.id)!;
+      const newState = {
+        ...state,
+        todoList: updateTodoList(
+          state.todoList,
+          action.id,
+          {
+            ...todo,
+            editedItems: {
+              title: todo.title,
+              detail: todo.detail,
+            },
           },
         ),
       };
@@ -175,8 +213,23 @@ export const TodoList = () => {
     });
   };
 
+  const onEditDetailChange = (
+    id: TodoId,
+    e: ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    todoListDispatch({
+      type: "editDetail",
+      id: id,
+      value: e.target.value,
+    });
+  };
+
   const onClickSave = (id: TodoId) => {
     todoListDispatch({ type: "save", id: id });
+  };
+
+  const onCancelEdit = (id: TodoId) => {
+    todoListDispatch({ type: "cancelEdit", id: id });
   };
 
   const onClickAdd = () => {
@@ -223,7 +276,21 @@ export const TodoList = () => {
               placeholder="Title"
               autoFocus
             />
+            <textarea
+              className="input input-bordered mx-auto w-full m-4"
+              value={todo.editedItems.detail}
+              onChange={(e) => onEditDetailChange(todo.id, e)}
+              placeholder="Detail"
+              autoFocus
+            />
             <div className="modal-action">
+              <label
+                htmlFor={`${todo.id}`}
+                className="btn btn-neutral"
+                onClick={() => onCancelEdit(todo.id)}
+              >
+                Cancel
+              </label>
               <label
                 htmlFor={`${todo.id}`}
                 className={todo.editedItems.title === ""
@@ -242,9 +309,6 @@ export const TodoList = () => {
               </label>
             </div>
           </div>
-          <label htmlFor={`${todo.id}`} className="modal-backdrop">
-            Cancel
-          </label>
         </div>
       </li>
     );
